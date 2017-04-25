@@ -60,8 +60,6 @@ def connect_loop():
                 f.close()
                 f = f = open('test', 'a')
                 continue
-
-            print(text)
             f.write(text)
             process_input(text)  # actually process the input
 
@@ -177,6 +175,9 @@ def process_input(text):
                 ndf = open(ndfile, 'w')
                 ndf.write(str(namestrdic))
                 ndf.close()
+        else:
+            irc.send(
+                'privmsg' + sendgoal(text) + "Sorry, I've no idea " + '\r\n')
 
     elif re.search(ownernick, message, re.IGNORECASE):
         tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -224,7 +225,6 @@ def process_input(text):
             irc.send('privmsg ' + ngoal + ' :' + stext + '\r\n')
 
     else:
-
         return
 
 '''
