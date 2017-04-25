@@ -5,7 +5,11 @@ import re
 import time
 
 # irc-related constants
-
+server = "****"  
+port = 6667
+channels = ["#****", ]
+botnick = "****"
+ownernick = '****'
 
 # make stuff that lets you talk to IRC
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # defines the socket
