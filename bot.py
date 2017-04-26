@@ -51,15 +51,23 @@ def connect_loop():
     for channel in channels:
         irc.send("join " + channel + "\r\n")
 
-    f = open('test', 'a')
+    dt = time.strftime("%Y-%m-%d", time.localtime())
+    f = open(dt + ' log', 'a')
     while True:
         try:
             text = irc.recv(2040)
             if re.match('PING :irc.devel.redhat.com', text):
                 irc.send('PONG :irc.devel.redhat.com\r\n')
                 f.close()
-                f = f = open('test', 'a')
+                f = open(dt + ' log', 'a')
                 continue
+            if dt != time.strftime("%Y-%m-%d", time.localtime()):
+                f.close()
+                dt = time.strftime("%Y-%m-%d", time.localtime())
+                f = open(dt + ' log', 'a')
+            
+            tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            f.write(tm + '\n')
             f.write(text)
             process_input(text)  # actually process the input
 
@@ -109,7 +117,8 @@ def process_input(text):
         if re.match(botnick, message):
             message = message.split(botnick)[1]
         message = message.strip().strip(',').strip()
-        if re.match('ping', message, re.IGNORECASE):
+        if re.match('ping', message, re.IGNORECASE) or \
+                re.match('\x01ping', message, re.IGNORECASE):
             rtime = re.findall(r'([0-9]+)', message)
             if len(rtime) > 0:
                 irc.send('notice' + sendgoal(text) + '\x01PING ' + rtime[
@@ -231,3 +240,4 @@ def process_input(text):
 Start
 '''
 connect_loop()
+
