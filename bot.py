@@ -52,20 +52,20 @@ def connect_loop():
         irc.send("join " + channel + "\r\n")
 
     dt = time.strftime("%Y-%m-%d", time.localtime())
-    f = open(dt + ' log', 'a')
+    f = open('log/' + dt + '_log', 'a')
     while True:
         try:
             text = irc.recv(2040)
             if re.match('PING :irc.devel.redhat.com', text):
                 irc.send('PONG :irc.devel.redhat.com\r\n')
                 f.close()
-                f = open(dt + ' log', 'a')
+                f = open('log/' + dt + '_log', 'a')
                 continue
             if dt != time.strftime("%Y-%m-%d", time.localtime()):
                 f.close()
                 dt = time.strftime("%Y-%m-%d", time.localtime())
-                f = open(dt + ' log', 'a')
-            
+                f = open('log/' + dt + '_log', 'a')
+
             tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             f.write(tm + '\n')
             f.write(text)
