@@ -113,7 +113,9 @@ def getmsg(text, key):
 def process_input(text):
 
     message = getmsg(text, PRIVMSG).lower()
-    if getgoal(text) == botnick or re.match(botnick, message):
+    gotg = getgoal(text)
+    gotn = getname(text)
+    if gotg == botnick or re.match(botnick, message):
         if re.match(botnick, message):
             message = message.split(botnick)[1]
         message = message.strip().strip(',').strip()
@@ -149,12 +151,14 @@ def process_input(text):
             stext = message + ' is ' +strdic[message]
             irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
         elif message in namestrdic.keys():
-            if getgoal(text) == botnick:
+            if gotg == botnick:
                 stext = message + ' is ' + namestrdic[message]
                 irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
             else:
-                irc.send('names ' + getgoal(text) + '\r\n')
-                nameop.append((1, getgoal(text), getname(text), message))
+                if gotg in namelist.keys():
+                    del namelist[gotg]
+                irc.send('names ' + gotg + '\r\n')
+                nameop.append((1, gotg, gotn, message))
 
         elif re.search(' is ', message, re.IGNORECASE):
             mkey, mvalue = message.split(' is ')
@@ -192,10 +196,12 @@ def process_input(text):
         tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         onf = open(ownerfile, 'a')
         onf.write(tm + '\n')
-        onf.write(getname(text) + ' to ' + getgoal(text) + ':' + message + '\n')
+        onf.write(gotn + ' to ' + gotg + ':' + message + '\n')
         onf.close()
-        irc.send('names ' + getgoal(text) + '\r\n')
-        nameop.append((0, getgoal(text), getname(text), None))
+        if gotg in namelist.keys():
+            del namelist[gotg]
+        irc.send('names ' + gotg + '\r\n')
+        nameop.append((0, gotg, gotn, None))
 
     elif re.search(NAMEINFO + '.+= .+ :.+', text):
         nameinfo = re.findall(NAMEINFO + ' .+ = (.+) :(.+)\r', text)
@@ -205,7 +211,7 @@ def process_input(text):
         else:
             namelist[nameinfo[0][0]] = nif
 
-    elif re.search(NAMEEND + '.+ :.+', text):
+    elif re.search(NAMEEND + '.+ :End of /NAMES list', text):
         if len(nameop) == 0:
             return
         nop = nameop[0][0]
@@ -240,4 +246,3 @@ def process_input(text):
 Start
 '''
 connect_loop()
-
