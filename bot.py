@@ -224,7 +224,7 @@ def process_input(text):
                 return
             else:
                 stext = nsender + ', sorry ' + ownernick + ' is away'
-                irc.send('privmsg' + ngoal + ' :' + stext + '\r\n')
+                irc.send('privmsg ' + ngoal + ' :' + stext + '\r\n')
         elif nop == 1:
             nameinfo = namestrdic[namekey].split()
             nownameinfo = namelist[ngoal].split()
