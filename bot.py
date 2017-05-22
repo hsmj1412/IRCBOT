@@ -56,6 +56,13 @@ def connect_loop():
     while True:
         try:
             text = irc.recv(2040)
+            if len(text) <= 0:
+                irc.connect((server, port))
+                irc.send("user " + botnick + " " + 
+                         botnick + " " + botnick + " :testbot\r\n")
+                irc.send("nick " + botnick + "\r\n")
+                continue
+
             if re.match('PING :irc.devel.redhat.com', text):
                 irc.send('PONG :irc.devel.redhat.com\r\n')
                 f.close()
