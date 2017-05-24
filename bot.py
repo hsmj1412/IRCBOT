@@ -5,7 +5,11 @@ import re
 import time
 
 # irc-related constants
-
+server = "****"  
+port = 6667
+channels = ["#****", ]
+botnick = "****"
+ownernick = '****'
 
 # make stuff that lets you talk to IRC
 irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # defines the socket
@@ -47,17 +51,30 @@ def connect_loop():
     for channel in channels:
         irc.send("join " + channel + "\r\n")
 
-    f = open('test', 'a')
+    dt = time.strftime("%Y-%m-%d", time.localtime())
+    f = open('log/' + dt + '_log', 'a')
     while True:
         try:
             text = irc.recv(2040)
+            if len(text) <= 0:
+                irc.connect((server, port))
+                irc.send("user " + botnick + " " + 
+                         botnick + " " + botnick + " :testbot\r\n")
+                irc.send("nick " + botnick + "\r\n")
+                continue
+
             if re.match('PING :irc.devel.redhat.com', text):
                 irc.send('PONG :irc.devel.redhat.com\r\n')
                 f.close()
-                f = f = open('test', 'a')
+                f = open('log/' + dt + '_log', 'a')
                 continue
+            if dt != time.strftime("%Y-%m-%d", time.localtime()):
+                f.close()
+                dt = time.strftime("%Y-%m-%d", time.localtime())
+                f = open('log/' + dt + '_log', 'a')
 
-            print(text)
+            tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            f.write(tm + '\n')
             f.write(text)
             process_input(text)  # actually process the input
 
@@ -103,11 +120,14 @@ def getmsg(text, key):
 def process_input(text):
 
     message = getmsg(text, PRIVMSG).lower()
-    if getgoal(text) == botnick or re.match(botnick, message):
+    gotg = getgoal(text)
+    gotn = getname(text)
+    if gotg == botnick or re.match(botnick, message):
         if re.match(botnick, message):
             message = message.split(botnick)[1]
         message = message.strip().strip(',').strip()
-        if re.match('ping', message, re.IGNORECASE):
+        if re.match('ping', message, re.IGNORECASE) or \
+                re.match('\x01ping', message, re.IGNORECASE):
             rtime = re.findall(r'([0-9]+)', message)
             if len(rtime) > 0:
                 irc.send('notice' + sendgoal(text) + '\x01PING ' + rtime[
@@ -138,12 +158,14 @@ def process_input(text):
             stext = message + ' is ' +strdic[message]
             irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
         elif message in namestrdic.keys():
-            if getgoal(text) == botnick:
+            if gotg == botnick:
                 stext = message + ' is ' + namestrdic[message]
                 irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
             else:
-                irc.send('names ' + getgoal(text) + '\r\n')
-                nameop.append((1, getgoal(text), getname(text), message))
+                if gotg in namelist.keys():
+                    del namelist[gotg]
+                irc.send('names ' + gotg + '\r\n')
+                nameop.append((1, gotg, gotn, message))
 
         elif re.search(' is ', message, re.IGNORECASE):
             mkey, mvalue = message.split(' is ')
@@ -173,15 +195,20 @@ def process_input(text):
                 ndf = open(ndfile, 'w')
                 ndf.write(str(namestrdic))
                 ndf.close()
+        else:
+            irc.send(
+                'privmsg' + sendgoal(text) + "Sorry, I've no idea " + '\r\n')
 
     elif re.search(ownernick, message, re.IGNORECASE):
         tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         onf = open(ownerfile, 'a')
         onf.write(tm + '\n')
-        onf.write(getname(text) + ' to ' + getgoal(text) + ':' + message + '\n')
+        onf.write(gotn + ' to ' + gotg + ':' + message + '\n')
         onf.close()
-        irc.send('names ' + getgoal(text) + '\r\n')
-        nameop.append((0, getgoal(text), getname(text), None))
+        if gotg in namelist.keys():
+            del namelist[gotg]
+        irc.send('names ' + gotg + '\r\n')
+        nameop.append((0, gotg, gotn, None))
 
     elif re.search(NAMEINFO + '.+= .+ :.+', text):
         nameinfo = re.findall(NAMEINFO + ' .+ = (.+) :(.+)\r', text)
@@ -191,7 +218,7 @@ def process_input(text):
         else:
             namelist[nameinfo[0][0]] = nif
 
-    elif re.search(NAMEEND + '.+ :.+', text):
+    elif re.search(NAMEEND + '.+ :End of /NAMES list', text):
         if len(nameop) == 0:
             return
         nop = nameop[0][0]
@@ -204,7 +231,7 @@ def process_input(text):
                 return
             else:
                 stext = nsender + ', sorry ' + ownernick + ' is away'
-                irc.send('privmsg' + ngoal + ' :' + stext + '\r\n')
+                irc.send('privmsg ' + ngoal + ' :' + stext + '\r\n')
         elif nop == 1:
             nameinfo = namestrdic[namekey].split()
             nownameinfo = namelist[ngoal].split()
@@ -220,7 +247,6 @@ def process_input(text):
             irc.send('privmsg ' + ngoal + ' :' + stext + '\r\n')
 
     else:
-
         return
 
 '''
