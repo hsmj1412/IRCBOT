@@ -53,30 +53,43 @@ def connect_loop():
 
     dt = time.strftime("%Y-%m-%d", time.localtime())
     f = open('log/' + dt + '_log', 'a')
+    text = ''
     while True:
         try:
-            text = irc.recv(2040)
-            if len(text) <= 0:
+            data = irc.recv(4096)
+            fff = open('fuck.log', 'a')
+            print >>fff, data
+            fff.close()
+            if len(data) <= 0:
                 irc.connect((server, port))
-                irc.send("user " + botnick + " " + 
+                irc.send("user " + botnick + " " +
                          botnick + " " + botnick + " :testbot\r\n")
                 irc.send("nick " + botnick + "\r\n")
                 continue
 
-            if re.match('PING :irc.devel.redhat.com', text):
-                irc.send('PONG :irc.devel.redhat.com\r\n')
-                f.close()
-                f = open('log/' + dt + '_log', 'a')
-                continue
-            if dt != time.strftime("%Y-%m-%d", time.localtime()):
-                f.close()
-                dt = time.strftime("%Y-%m-%d", time.localtime())
-                f = open('log/' + dt + '_log', 'a')
+            while len(data) > 0:
+                if data.find('\r\n') == -1:
+                    text = data
+                    break
+                texttp, data = data.split('\r\n', 1)
+                text += texttp + '\n'
+                if re.match('PING :irc\.devel\.redhat\.com', text):
+                    irc.send('PONG :irc.devel.redhat.com\r\n')
+                    f.close()
+                    f = open('log/' + dt + '_log', 'a')
+                    text = ''
+                    continue
+                if dt != time.strftime("%Y-%m-%d", time.localtime()):
+                    f.close()
+                    dt = time.strftime("%Y-%m-%d", time.localtime())
+                    f = open('log/' + dt + '_log', 'a')
 
-            tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            f.write(tm + '\n')
-            f.write(text)
-            process_input(text)  # actually process the input
+                tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                f.write(tm + '\n')
+                f.write(text)
+                process_input(text)  # actually process the input
+                text = ''
+                f.flush()
 
         except Exception as e:
 
@@ -116,6 +129,16 @@ def getmsg(text, key):
         return ""
 
 
+def sendmsg(goal, stext):
+    while len(stext) > 256:
+        st1, stext = stext[0:256], stext[256:]
+        if st1.find(' ', 1):
+            st1, st2 = st1.rsplit(' ', 1)
+            stext = st2 + stext
+        irc.send('privmsg' + goal + st1 + '\r\n')
+    irc.send('privmsg' + goal + stext + '\r\n')
+
+
 # Function for reacting to input
 def process_input(text):
 
@@ -133,34 +156,34 @@ def process_input(text):
                 irc.send('notice' + sendgoal(text) + '\x01PING ' + rtime[
                     0] + '\x01\r\n')
                 return
-            irc.send('privmsg' + sendgoal(text) + 'pong ' + '\r\n')
+            sendmsg(sendgoal(text), 'pong')
         elif re.match('forget', message, re.IGNORECASE):
             message =message.split('forget')[1].strip()
             if message in namestrdic.keys():
                 del namestrdic[message]
                 stext = "I've forgotten what I knew about " + message
-                irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
+                sendmsg(sendgoal(text), stext)
                 ndf = open(ndfile, 'w')
                 ndf.write(str(namestrdic))
                 ndf.close()
             elif message in strdic:
                 del strdic[message]
                 stext = "I've forgotten what I knew about " + message
-                irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
+                sendmsg(sendgoal(text), stext)
                 sdf = open(sdfile, 'w')
                 sdf.write(str(strdic))
                 sdf.close()
             else:
                 stext = "I never knew anything about " + message
-                irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
+                sendmsg(sendgoal(text), stext)
 
         elif message in strdic.keys():
             stext = message + ' is ' +strdic[message]
-            irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
+            sendmsg(sendgoal(text), stext)
         elif message in namestrdic.keys():
             if gotg == botnick:
                 stext = message + ' is ' + namestrdic[message]
-                irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
+                sendmsg(sendgoal(text), stext)
             else:
                 if gotg in namelist.keys():
                     del namelist[gotg]
@@ -174,9 +197,9 @@ def process_input(text):
                     stext = 'yes I know it'
                 else:
                     stext = 'but ' + mkey + ' is ' + strdic[mkey]
-                irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
+                sendmsg(sendgoal(text), stext)
             else:
-                irc.send('privmsg' + sendgoal(text) + 'ok' + '\r\n')
+                sendmsg(sendgoal(text), 'ok')
                 strdic[mkey] = mvalue
                 sdf = open(sdfile, 'w')
                 sdf.write(str(strdic))
@@ -188,16 +211,16 @@ def process_input(text):
                     stext = 'yes I know it'
                 else:
                     stext = 'but ' + mkey + ' is ' + namestrdic[mkey]
-                irc.send('privmsg' + sendgoal(text) + stext + '\r\n')
+                sendmsg(sendgoal(text), stext)
             else:
-                irc.send('privmsg' + sendgoal(text) + 'ok' + '\r\n')
+                sendmsg(sendgoal(text), 'ok')
                 namestrdic[mkey] = mvalue
                 ndf = open(ndfile, 'w')
                 ndf.write(str(namestrdic))
                 ndf.close()
         else:
-            irc.send(
-                'privmsg' + sendgoal(text) + "Sorry, I've no idea " + '\r\n')
+            stext = "Sorry, I've no idea "
+            sendmsg(sendgoal(text), stext)
 
     elif re.search(ownernick, message, re.IGNORECASE):
         tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -211,7 +234,7 @@ def process_input(text):
         nameop.append((0, gotg, gotn, None))
 
     elif re.search(NAMEINFO + '.+= .+ :.+', text):
-        nameinfo = re.findall(NAMEINFO + ' .+ = (.+) :(.+)\r', text)
+        nameinfo = re.findall(NAMEINFO + ' .+ = (.+) :(.+)\n', text)
         nif = nameinfo[0][1].replace('@', '')
         if nameinfo[0] in namelist.keys():
             namelist[nameinfo[0][0]] += ' ' + nif
@@ -231,7 +254,7 @@ def process_input(text):
                 return
             else:
                 stext = nsender + ', sorry ' + ownernick + ' is away'
-                irc.send('privmsg ' + ngoal + ' :' + stext + '\r\n')
+                sendmsg(' ' + ngoal + ' :', stext)
         elif nop == 1:
             nameinfo = namestrdic[namekey].split()
             nownameinfo = namelist[ngoal].split()
@@ -244,7 +267,7 @@ def process_input(text):
                         stext += ' ' + nnif
                 if nflag:
                     stext += ' ' + nif
-            irc.send('privmsg ' + ngoal + ' :' + stext + '\r\n')
+            sendmsg(' ' + ngoal + ' :', stext)
 
     else:
         return
