@@ -106,7 +106,7 @@ def getname(text):
 
 
 def getgoal(text):
-    m = re.findall(r'PRIVMSG (.+) :.+', text)
+    m = re.findall(r'PRIVMSG (.+?) :.+', text)
     if len(m) > 0:
         return m[0]
     else:
@@ -233,7 +233,7 @@ def process_input(text):
         irc.send('names ' + gotg + '\r\n')
         nameop.append((0, gotg, gotn, None))
 
-    elif re.search(NAMEINFO + '.+= .+ :.+', text):
+    elif re.search(NAMEINFO + '.+?= .+? :.+', text):
         nameinfo = re.findall(NAMEINFO + ' .+ = (.+) :(.+)\n', text)
         nif = nameinfo[0][1].replace('@', '')
         if nameinfo[0] in namelist.keys():
@@ -278,3 +278,4 @@ def process_input(text):
 Start
 '''
 connect_loop()
+
