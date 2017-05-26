@@ -162,7 +162,7 @@ def process_input(text):
                 ndf = open(ndfile, 'w')
                 ndf.write(str(namestrdic))
                 ndf.close()
-            elif message in strdic:
+            elif message in strdic.keys():
                 del strdic[message]
                 stext = "I've forgotten what I knew about " + message
                 sendmsg(sendgoal(text), stext)
