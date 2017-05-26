@@ -122,7 +122,7 @@ def sendgoal(text):
 
 
 def getmsg(text, key):
-    m = re.findall(key + ' .+ :(.+)', text)
+    m = re.findall(key + ' .+? :(.+)', text)
     if len(m) > 0:
         return m[0]
     else:
