@@ -252,6 +252,8 @@ def process_input(text):
         if nop == 0:
             if re.search(ownernick, namelist[ngoal]):
                 return
+            elif nsender == 'MrL':
+                return
             else:
                 stext = nsender + ', sorry ' + ownernick + ' is away'
                 sendmsg(' ' + ngoal + ' :', stext)
