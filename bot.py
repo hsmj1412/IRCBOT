@@ -57,9 +57,6 @@ def connect_loop():
     while True:
         try:
             data = irc.recv(4096)
-            fff = open('fuck.log', 'a')
-            print >>fff, data
-            fff.close()
             if len(data) <= 0:
                 irc.connect((server, port))
                 irc.send("user " + botnick + " " +
@@ -92,7 +89,6 @@ def connect_loop():
                 f.flush()
 
         except Exception as e:
-
             print(str(e))
             continue  # don't crash on exception; keep going
     f.close()
@@ -191,12 +187,18 @@ def process_input(text):
                 nameop.append((1, gotg, gotn, message))
 
         elif re.search(' is ', message, re.IGNORECASE):
-            mkey, mvalue = message.split(' is ')
-            if mkey in strdic.keys() or mkey in namestrdic.keys():
+            mkey, mvalue = message.split(' is ', 1)
+            if mkey in strdic.keys():
                 if strdic[mkey] == mvalue:
                     stext = 'yes I know it'
                 else:
                     stext = 'but ' + mkey + ' is ' + strdic[mkey]
+                sendmsg(sendgoal(text), stext)
+            elif mkey in namestrdic.keys():
+                if namestrdic[mkey] == mvalue:
+                    stext = 'yes I know it'
+                else:
+                    stext = 'but ' + mkey + ' is ' + namestrdic[mkey]
                 sendmsg(sendgoal(text), stext)
             else:
                 sendmsg(sendgoal(text), 'ok')
@@ -205,8 +207,14 @@ def process_input(text):
                 sdf.write(str(strdic))
                 sdf.close()
         elif re.search(' nlis ', message, re.IGNORECASE):
-            mkey, mvalue = message.split(' nlis ')
-            if mkey in strdic.keys() or mkey in namestrdic.keys():
+            mkey, mvalue = message.split(' nlis ', 1)
+            if mkey in strdic.keys():
+                if strdic[mkey] == mvalue:
+                    stext = 'yes I know it'
+                else:
+                    stext = 'but ' + mkey + ' is ' + strdic[mkey]
+                sendmsg(sendgoal(text), stext)
+            elif mkey in namestrdic.keys():
                 if namestrdic[mkey] == mvalue:
                     stext = 'yes I know it'
                 else:
@@ -278,4 +286,3 @@ def process_input(text):
 Start
 '''
 connect_loop()
-
