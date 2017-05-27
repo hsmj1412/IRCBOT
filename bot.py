@@ -128,7 +128,7 @@ def getmsg(text, key):
 def sendmsg(goal, stext):
     while len(stext) > 256:
         st1, stext = stext[0:256], stext[256:]
-        if st1.find(' ', 1):
+        if st1.find(' ', 1) > 0:
             st1, st2 = st1.rsplit(' ', 1)
             stext = st2 + stext
         irc.send('privmsg' + goal + st1 + '\r\n')
